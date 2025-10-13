@@ -1,6 +1,8 @@
 import os
 import shutil
 
+# NE PLUS LANCER LE SCRIPT
+
 # Dossier source
 myPathSource = "TD_DATALAKE/DATALAKE/0_SOURCE_WEB"
 
