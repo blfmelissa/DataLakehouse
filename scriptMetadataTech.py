@@ -55,7 +55,7 @@ for myFileName in myListOfFileSourceTmp:
     shutil.copy(src_file, dst_file)
     
 with open(meta_full_path, "w", newline='', encoding="utf-8") as csvfile:
-writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL)
-writer.writerows(rows)
+    writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL)
+    writer.writerows(rows)
 
 print("******** Fin de copie des fichiers ********")
