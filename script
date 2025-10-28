@@ -3,7 +3,7 @@ import os
 import re
 
 # == ÉTAPE 1: Définir les chemins des fichiers ==
-chemin_fichier_entree = r'C:\TD_DATALAKE\projet-datalake\TD_DATALAKE\DATALAKE\99_METADATA\metadata_descriptive.csv'
+chemin_fichier_entree = r'C:\Users\ZyadN\Desktop\A\projet-datalake\TD_DATALAKE\DATALAKE\99_METADATA\metadata_descriptive.csv'
 
 nom_fichier_societes = 'societes.csv'
 nom_fichier_emplois = 'emplois.csv'
@@ -126,21 +126,30 @@ for offre_data in offres_emploi_pivot.values():
     # 1. SOCIETES
     # --------------------------
     
-    # Gère 'nomSociete' ou 'nomEntreprise' comme fallback
-    nom_societe = offre_data.get('nomSociete') or offre_data.get('nomEntreprise') or ''
-    if not nom_societe:
-        continue # Pas de nom de société, on ne peut rien faire, on ignore cette entrée
+# --------------------------
+    # 1. SOCIETES (CORRIGÉ POUR LA CASSE)
+    # --------------------------
+    
+    nom_societe_brut = offre_data.get('nomSociete') or offre_data.get('nomEntreprise') or ''
 
-    # Utilise 'villeEmploi' comme source pour la localisation de la société
+    nom_societe_nettoye = clean_value(nom_societe_brut)
+
+    if not nom_societe_nettoye:
+        continue
+
+
+    cle_societe = nom_societe_nettoye.lower()
+
     loc = parse_location(offre_data.get('villeEmploi'))
 
-    if nom_societe not in societes_ajoutees:
+    if cle_societe not in societes_ajoutees:
         current_societe_id = societe_id_compteur
-        societes_ajoutees[nom_societe] = current_societe_id
+        
+        societes_ajoutees[cle_societe] = current_societe_id
 
         liste_societes.append({
             'idsociete': current_societe_id,
-            'nomsociete': nom_societe,
+            'nomsociete': nom_societe_nettoye, 
             'villeSociete': loc['city'],
             'codePostalSociete': loc['postal_code'],
             'regionSociete': loc['region'],
@@ -148,7 +157,7 @@ for offre_data in offres_emploi_pivot.values():
         })
         societe_id_compteur += 1
     else:
-        current_societe_id = societes_ajoutees[nom_societe]
+        current_societe_id = societes_ajoutees[cle_societe]
 
     # --------------------------
     # 2. EMPLOIS  (CORRIGÉ)
