@@ -11,6 +11,8 @@ Usage:
 """
 
 import sys
+import os
+import csv
 
 # Déterminer quelle(s) phase(s) exécuter
 phase_a_executer = None
@@ -62,7 +64,31 @@ if phase_a_executer is None or phase_a_executer == 3:
         print(f"Erreur Phase 3 : {e}")
         sys.exit(1)
 
-print("\n" + "=" * 70)
-print("PIPELINE TERMINé AVEC SUCCES")
-print("=" * 70)
+# Affichage du résumé si toutes les phases ont été exécutées
+if phase_a_executer is None or phase_a_executer == 3:
+    print("\n" + "=" * 70)
+    print("PIPELINE TERMINE AVEC SUCCES")
+    print("=" * 70)
+
+    try:
+        from Datalake_Parametrage import myPathRoot_PRODUCTIONZONE
+
+        # Compter les enregistrements dans chaque CSV
+        societes_file = os.path.join(myPathRoot_PRODUCTIONZONE, 'societes.csv')
+        emplois_file = os.path.join(myPathRoot_PRODUCTIONZONE, 'emplois.csv')
+        avis_file = os.path.join(myPathRoot_PRODUCTIONZONE, 'avis.csv')
+
+        nb_societes = sum(1 for _ in open(societes_file, encoding='utf-8')) - 1
+        nb_emplois = sum(1 for _ in open(emplois_file, encoding='utf-8')) - 1
+
+        with open(avis_file, 'r', encoding='utf-8') as f:
+            nb_avis = sum(1 for _ in csv.DictReader(f, delimiter=';'))
+
+        print(f"\nDonnées générées :")
+        print(f"  - Sociétés  : {nb_societes}")
+        print(f"  - Emplois   : {nb_emplois}")
+        print(f"  - Avis      : {nb_avis}")
+        print("=" * 70)
+    except Exception:
+        pass
 

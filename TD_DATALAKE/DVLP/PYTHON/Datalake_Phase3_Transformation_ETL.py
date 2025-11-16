@@ -234,19 +234,19 @@ for offre_data in offres_emploi_pivot.values():
 
 headers_societe = ['idsociete', 'nomsociete', 'villeSociete', 'codePostalSociete', 'regionSociete', 'paysSociete']
 with open(nom_fichier_societes, 'w', newline='', encoding='utf-8') as f:
-    writer = csv.DictWriter(f, fieldnames=headers_societe, delimiter=';')
+    writer = csv.DictWriter(f, fieldnames=headers_societe, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
     writer.writeheader()
     writer.writerows(liste_societes)
 
 headers_emploi = ['idemploi', 'libelleEmploi', 'villeEmploi', 'codePostalEmploi', 'regionEmploi', 'paysEmploi', 'descriptifemploi', 'idsociete']
 with open(nom_fichier_emplois, 'w', newline='', encoding='utf-8') as f:
-    writer = csv.DictWriter(f, fieldnames=headers_emploi, delimiter=';')
+    writer = csv.DictWriter(f, fieldnames=headers_emploi, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
     writer.writeheader()
     writer.writerows(liste_emplois)
 
 headers_avis = ['idavis', 'idsociete', 'titreAvis', 'descriptionAvis', 'avantageAvis', 'inconvenientAvis', 'noteMoyenneAvis']
 with open(nom_fichier_avis, 'w', newline='', encoding='utf-8') as f:
-    writer = csv.DictWriter(f, fieldnames=headers_avis, delimiter=';')
+    writer = csv.DictWriter(f, fieldnames=headers_avis, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
     writer.writeheader()
     writer.writerows(liste_avis)
 
