@@ -1,31 +1,31 @@
+# -*- coding: utf-8 -*-
+
 import os
 import shutil
+import csv
+from datetime import datetime
 
-# NE PLUS LANCER LE SCRIPT
-
-# Dossier source
-myPathSource = "TD_DATALAKE/DATALAKE/0_SOURCE_WEB"
+from Datalake_Parametrage import myPathRoot_DATASOURCE, myPathRoot_LANDINGZONE, myPathRoot_METADATA
 
 # Dossiers cibles
-path_linkedin_emp = "TD_DATALAKE/DATALAKE/1_LANDING_ZONE/LINKEDIN/EMP"
-path_glassdoor_avi = "TD_DATALAKE/DATALAKE/1_LANDING_ZONE/GLASSDOOR/AVI"
-path_glassdoor_soc = "TD_DATALAKE/DATALAKE/1_LANDING_ZONE/GLASSDOOR/SOC"
+path_linkedin_emp = os.path.join(myPathRoot_LANDINGZONE, "LINKEDIN", "EMP")
+path_glassdoor_avi = os.path.join(myPathRoot_LANDINGZONE, "GLASSDOOR", "AVI")
+path_glassdoor_soc = os.path.join(myPathRoot_LANDINGZONE, "GLASSDOOR", "SOC")
 
-meta_path = "TD_DATALAKE/DATALAKE/99_METADATA"
 meta_file = "metadata_technique.csv"
-meta_full_path = os.path.join(meta_path, meta_file)
+meta_full_path = os.path.join(myPathRoot_METADATA, meta_file)
 
-myListOfFileSourceTmp = os.listdir(myPathSource)
+myListOfFileSourceTmp = os.listdir(myPathRoot_DATASOURCE)
 
 rows = []
 rows.append(["cle_unique", "colonne", "valeur"])
 
-cle_unique = 0  
+cle_unique = 0
 
 print("******** Début de copie des fichiers ********")
 
 for myFileName in myListOfFileSourceTmp:
-    src_file = os.path.join(myPathSource, myFileName)
+    src_file = os.path.join(myPathRoot_DATASOURCE, myFileName)
     if "LINKEDIN" in myFileName:
         dst_dir = path_linkedin_emp
     elif "AVIS-SOC-GLASSDOOR" in myFileName:
@@ -33,7 +33,7 @@ for myFileName in myListOfFileSourceTmp:
     elif "INFO-SOC-GLASSDOOR" in myFileName:
         dst_dir = path_glassdoor_soc
     else:
-        continue  
+        continue
 
     dst_file = os.path.join(dst_dir, myFileName)
     shutil.copy(src_file, dst_file)
@@ -42,7 +42,7 @@ for myFileName in myListOfFileSourceTmp:
     rows.append([str(cle_unique), "nom_du_fichier_html", myFileName])
     rows.append([str(cle_unique), "provenance_du_fichier_html", src_file])
     rows.append([str(cle_unique), "localisation_du_fichier_html", dst_file])
-    
+
     # exemple en + si besoin (à voir avec le prof):
     # rows.append([str(cle_unique), "nom_entreprise", "Business & décision"])
     # rows.append([str(cle_unique), "ville_entreprise", "Lyon 7 eme"])
@@ -52,10 +52,9 @@ for myFileName in myListOfFileSourceTmp:
 
     print(f"Copie du fichier : {src_file} -- vers --> {dst_file}")
 
-    shutil.copy(src_file, dst_file)
-    
 with open(meta_full_path, "w", newline='', encoding="utf-8") as csvfile:
     writer = csv.writer(csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL)
     writer.writerows(rows)
 
 print("******** Fin de copie des fichiers ********")
+

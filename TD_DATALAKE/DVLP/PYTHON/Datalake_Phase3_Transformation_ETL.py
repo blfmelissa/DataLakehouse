@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+
 import csv
 import os
 import re
-import unicodedata  # <-- NOUVEL IMPORT
+import unicodedata
 
-# == NOUVELLE FONCTION DE NORMALISATION ==
+from Datalake_Parametrage import myPathRoot_CURRATEDZONE, myPathRoot_PRODUCTIONZONE
+
+
 def normalize_key(text):
     """
     Normalise un texte pour la comparaison ou le stockage propre :
@@ -14,29 +18,25 @@ def normalize_key(text):
     """
     if not text:
         return ""
-    
-    # 1. Minuscules
+
     s = str(text).lower()
-    
-    # 2. Suppression des accents (ex: "é" -> "e")
+
     s = unicodedata.normalize('NFD', s)
     s = s.encode('ascii', 'ignore').decode('utf-8')
-    
-    # 3. Remplace tout ce qui n'est ni lettre, ni chiffre, ni espace par un espace
-    s = re.sub(r'[^a-z0-9\s]', ' ', s) 
-    
-    # 4. Réduire les espaces multiples à un seul
+
+    s = re.sub(r'[^a-z0-9\s]', ' ', s)
+
     s = re.sub(r'\s+', ' ', s).strip()
     return s
 
-# == ÉTAPE 1: Définir les chemins des fichiers ==
-chemin_fichier_entree = r'C:\Users\ZyadN\Desktop\A\projet-datalake\TD_DATALAKE\DATALAKE\99_METADATA\metadata_descriptive.csv'
 
-nom_fichier_societes = 'societes.csv'
-nom_fichier_emplois = 'emplois.csv'
-nom_fichier_avis = 'avis.csv'
+chemin_fichier_entree = os.path.join(myPathRoot_CURRATEDZONE, "METADONNEES", "metadata_descriptive.csv")
 
-# == FONCTION parse_location (MODIFIÉE) ==
+nom_fichier_societes = os.path.join(myPathRoot_PRODUCTIONZONE, 'societes.csv')
+nom_fichier_emplois = os.path.join(myPathRoot_PRODUCTIONZONE, 'emplois.csv')
+nom_fichier_avis = os.path.join(myPathRoot_PRODUCTIONZONE, 'avis.csv')
+
+
 def parse_location(raw):
     """
     Retourne un dict avec keys: city, postal_code, region, country.
@@ -46,21 +46,14 @@ def parse_location(raw):
     if not raw:
         return {'city': '', 'postal_code': '', 'region': '', 'country': ''}
 
-    # On parse sur le texte brut pour garder la structure (virgules)
     s = raw.strip()
-    
-    # On split sur le texte brut
+
     parts_brutes = [p.strip() for p in s.split(',') if p.strip()]
-    
-    # On normalise les morceaux (ex: "Île-de-France" -> "ile de france")
+
     parts = [normalize_key(p) for p in parts_brutes if p.strip()]
-    
-    # La logique de parsing utilise 'parts' (normalisées)
-    # Sauf pour la logique de pays qui a besoin de 'FR' en majuscules
+
 
     def is_postal_token(tok):
-        # La normalisation ne touche pas aux chiffres,
-        # donc 75001 reste 75001
         return bool(re.match(r'^\d{2,5}$', tok))
 
     postal = ''
@@ -70,30 +63,27 @@ def parse_location(raw):
 
     if len(parts) == 1:
         token = parts[0]
-        # On vérifie si le token normalisé contient un code postal
+
         m = re.match(r'^(\d{2,5})\s+(.*)$', token)
         if m:
-            postal = m.group(1) # Le code postal brut
-            city = m.group(2)   # Déjà normalisé
+            postal = m.group(1)
+            city = m.group(2)
         elif is_postal_token(token):
             postal = token
         else:
-            city = token # Déjà normalisé
+            city = token
     else:
-        # On utilise le 'part' normalisé pour le code postal
         if is_postal_token(parts[0]):
             postal = parts[0]
             city = parts[1] if len(parts) > 1 else ''
             region = parts[2] if len(parts) > 2 else ''
             country = parts[3] if len(parts) > 3 else ''
         else:
-            # Pour le pays, on vérifie 'FR'/'FRA' sur la version BRUTE
-            # et 'france' sur la version NORMALISÉE
             possible_country_brut = parts_brutes[-1]
             possible_country_norm = parts[-1]
 
             if possible_country_brut.upper() in ('FR', 'FRA') or 'france' in possible_country_norm:
-                country = possible_country_norm # On stocke la version normalisée
+                country = possible_country_norm
                 if len(parts) == 2:
                     city = parts[0]
                 elif len(parts) == 3:
@@ -101,16 +91,14 @@ def parse_location(raw):
                     region = parts[1]
                 else:
                     city = parts[0]
-                    # Concatène les parties de région normalisées
+
                     region = ' '.join(parts[1:-1]) if len(parts) > 2 else ''
             else:
-                # Cas standard (ville, region, pays...)
+
                 city = parts[0]
                 region = parts[1] if len(parts) > 1 else ''
                 country = parts[-1] if len(parts) > 2 else ''
 
-    # Retourne les valeurs. 'postal' n'est jamais normalisé.
-    # Les autres le sont car ils viennent de 'parts'.
     return {
         'city': city or '',
         'postal_code': postal or '',
@@ -118,7 +106,6 @@ def parse_location(raw):
         'country': country or ''
     }
 
-# == ÉTAPE 2: Lire le fichier source et pivoter les données ==
 offres_emploi_pivot = {}
 
 print(f"Lecture du fichier source : {chemin_fichier_entree}")
@@ -126,20 +113,20 @@ print(f"Lecture du fichier source : {chemin_fichier_entree}")
 try:
     with open(chemin_fichier_entree, mode='r', encoding='utf-8') as fichier_source:
         lecteur_csv = csv.reader(fichier_source, delimiter=';')
-        
+
         for ligne in lecteur_csv:
             if len(ligne) == 3:
                 cle_str, colonne, valeur = [part.strip() for part in ligne]
-                
+
                 try:
                     cle_originale = int(cle_str)
                     if cle_originale not in offres_emploi_pivot:
                         offres_emploi_pivot[cle_originale] = {}
                     offres_emploi_pivot[cle_originale][colonne] = valeur
                 except ValueError:
-                    pass # clé non numérique
+                    pass
             else:
-                pass # ligne malformée
+                pass
 
 except FileNotFoundError:
     print(f"ERREUR : Le fichier '{chemin_fichier_entree}' est introuvable.")
@@ -147,10 +134,9 @@ except FileNotFoundError:
     exit()
 
 
-# == ÉTAPE 3: Préparer les listes (MODIFIÉE) ==
 liste_societes = []
 liste_emplois = []
-liste_avis = [] 
+liste_avis = []
 
 societes_ajoutees = {}
 societe_id_compteur = 1
@@ -167,78 +153,57 @@ def clean_value(v):
     return '' if s.upper() == 'NULL' else s
 
 for offre_data in offres_emploi_pivot.values():
-    
-    # --------------------------
-    # 1. SOCIETES (CORRIGÉ POUR CASSE, ACCENTS, PONCTUATION)
-    # --------------------------
-    
+
+
     nom_societe_brut = offre_data.get('nomSociete') or offre_data.get('nomEntreprise') or ''
-    
-    # 1. Nettoyer la valeur (gère "NULL", None, espaces)
+
     nom_societe_nettoye = clean_value(nom_societe_brut)
 
     if not nom_societe_nettoye:
-        continue # Pas de nom, on ignore
-
-    # 2. Créer une clé normalisée (minuscules, sans accents, sans ponctuation)
-    # "Cégid" -> "cegid", "Cegid, Inc." -> "cegid inc"
+        continue
     cle_societe = normalize_key(nom_societe_nettoye)
 
-    # La clé ne peut pas être vide (ex: nomSociete était juste ".")
     if not cle_societe:
         continue
 
-    # 3. Utiliser 'villeEmploi' (sera normalisée par parse_location)
     loc = parse_location(offre_data.get('villeEmploi'))
 
-    # 4. Vérifier la clé normalisée
     if cle_societe not in societes_ajoutees:
         current_societe_id = societe_id_compteur
-        
-        # On stocke l'ID en utilisant la clé normalisée
+
         societes_ajoutees[cle_societe] = current_societe_id
 
         liste_societes.append({
             'idsociete': current_societe_id,
-            # On stocke le nom *nettoyé* (avec casse originale)
-            'nomsociete': nom_societe_nettoye, 
-            'villeSociete': loc['city'],          # Déjà normalisée
-            'codePostalSociete': loc['postal_code'],    # Non normalisé
-            'regionSociete': loc['region'],        # Déjà normalisée
-            'paysSociete': loc['country']         # Déjà normalisée
+            'nomsociete': nom_societe_nettoye,
+            'villeSociete': loc['city'],
+            'codePostalSociete': loc['postal_code'],
+            'regionSociete': loc['region'],
+            'paysSociete': loc['country']
         })
         societe_id_compteur += 1
     else:
-        # On récupère l'ID existant en utilisant la clé normalisée
         current_societe_id = societes_ajoutees[cle_societe]
 
-    # --------------------------
-    # 2. EMPLOIS (CORRIGÉ POUR LES LIEUX)
-    # --------------------------
-    
+
     libelle_emploi_nettoye = clean_value(offre_data.get('libelleEmploi'))
-    
-    if libelle_emploi_nettoye: 
-        # loc_emploi sera normalisée (minuscules, sans accent)
-        # car elle est générée par parse_location
+
+    if libelle_emploi_nettoye:
         loc_emploi = parse_location(offre_data.get('villeEmploi'))
-        
+
         liste_emplois.append({
             'idemploi': emploi_id_compteur,
-            'libelleEmploi': libelle_emploi_nettoye, # Valeur brute nettoyée
-            'villeEmploi': loc_emploi['city'],         # Normalisée
-            'codePostalEmploi': loc_emploi['postal_code'],   # Non normalisé
-            'regionEmploi': loc_emploi['region'],      # Normalisée
-            'paysEmploi': loc_emploi['country'],       # Normalisée
+            'libelleEmploi': libelle_emploi_nettoye,
+            'villeEmploi': loc_emploi['city'],
+            'codePostalEmploi': loc_emploi['postal_code'],
+            'regionEmploi': loc_emploi['region'],
+            'paysEmploi': loc_emploi['country'],
             'descriptifemploi': clean_value(offre_data.get('Descriptif')),
             'idsociete': current_societe_id
         })
         emploi_id_compteur += 1
-    
-    # --------------------------
-    # 3. AVIS (Inchangé)
-    # --------------------------
-    
+
+
     note_moyenne = clean_value(offre_data.get('noteMoyEntreprise'))
 
     for i in range(1, 11):
@@ -253,10 +218,10 @@ for offre_data in offres_emploi_pivot.values():
         inconvenient_avis = clean_value(offre_data.get(key_inconv))
 
         if any([titre_avis, description_avis, avantage_avis, inconvenient_avis, note_moyenne]):
-            
+
             if i > 1 and not any([titre_avis, description_avis, avantage_avis, inconvenient_avis]):
-                break 
-            
+                break
+
             liste_avis.append({
                 'idavis': avis_id_compteur,
                 'idsociete': current_societe_id,
@@ -267,33 +232,30 @@ for offre_data in offres_emploi_pivot.values():
                 'noteMoyenneAvis': note_moyenne
             })
             avis_id_compteur += 1
-            
+
             if not any([titre_avis, description_avis, avantage_avis, inconvenient_avis]):
-                break 
+                break
 
 
-# == ÉTAPE 4: Écrire les listes dans des fichiers CSV ==
 
-# --- Écriture sociétés ---
 headers_societe = ['idsociete', 'nomsociete', 'villeSociete', 'codePostalSociete', 'regionSociete', 'paysSociete']
 with open(nom_fichier_societes, 'w', newline='', encoding='utf-8') as f:
     writer = csv.DictWriter(f, fieldnames=headers_societe, delimiter=';')
     writer.writeheader()
     writer.writerows(liste_societes)
-print(f"✅ Fichier '{os.path.abspath(nom_fichier_societes)}' créé avec {len(liste_societes)} sociétés.")
+print(f"Fichier '{os.path.abspath(nom_fichier_societes)}' créé avec {len(liste_societes)} sociétés.")
 
-# --- Écriture emplois ---
 headers_emploi = ['idemploi', 'libelleEmploi', 'villeEmploi', 'codePostalEmploi', 'regionEmploi', 'paysEmploi', 'descriptifemploi', 'idsociete']
 with open(nom_fichier_emplois, 'w', newline='', encoding='utf-8') as f:
     writer = csv.DictWriter(f, fieldnames=headers_emploi, delimiter=';')
     writer.writeheader()
     writer.writerows(liste_emplois)
-print(f"✅ Fichier '{os.path.abspath(nom_fichier_emplois)}' créé avec {len(liste_emplois)} offres d'emploi.")
+print(f"Fichier '{os.path.abspath(nom_fichier_emplois)}' créé avec {len(liste_emplois)} offres d'emploi.")
 
-# --- Écriture avis ---
 headers_avis = ['idavis', 'idsociete', 'titreAvis', 'descriptionAvis', 'avantageAvis', 'inconvenientAvis', 'noteMoyenneAvis']
 with open(nom_fichier_avis, 'w', newline='', encoding='utf-8') as f:
     writer = csv.DictWriter(f, fieldnames=headers_avis, delimiter=';')
     writer.writeheader()
     writer.writerows(liste_avis)
-print(f"✅ Fichier '{os.path.abspath(nom_fichier_avis)}' créé avec {len(liste_avis)} avis.")
+print(f"Fichier '{os.path.abspath(nom_fichier_avis)}' créé avec {len(liste_avis)} avis.")
+
