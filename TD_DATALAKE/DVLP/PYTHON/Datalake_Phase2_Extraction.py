@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+import json
 import pandas as pd
 from bs4 import BeautifulSoup
 import os
@@ -55,6 +57,28 @@ def extraire_texte_emploi_EMP(objet_html):
     if not texte_tmp:
         return 'NULL'
     return texte_tmp[0].get_text(strip=True) or 'NULL'
+
+#==============================================================================
+#-- LINKEDIN (EMPLOI) : Date de publication de l'offre d'emploi
+#==============================================================================
+def extraire_date_publication_emploi_EMP(objet_html):
+    try:
+        json_ld_tag = objet_html.find('script', type='application/ld+json')
+        
+        if json_ld_tag and json_ld_tag.string:
+            data = json.loads(json_ld_tag.string)
+            date_iso = data.get('datePosted')
+            
+            if date_iso:
+                return date_iso
+                
+    except Exception:
+        pass
+
+    texte_tmp = objet_html.find('span', class_='posted-time-ago__text')
+    if not texte_tmp:
+        return 'NULL'
+    return texte_tmp.get_text(strip=True) or 'NULL'
 
 #==============================================================================
 #-- GLASSDOOR (SOCIETE) : Fonction renvoyant le nom de l'entreprise
@@ -241,6 +265,12 @@ def extraire_liste_avis_employes_sur_entreprise_AVI(objet_html):
         except Exception as e:
             current_review.append('NULL')
 
+        # Date de l'avis
+        try: 
+            current_review.append(block.find('time').get_text(strip=True)) # (index 8)
+        except Exception as e:
+            current_review.append('NULL')
+
         # On ajoute la liste de cet avis à la liste principale
         liste_de_page_web.append(current_review)
 
@@ -273,12 +303,14 @@ for cle, group in grouped:
             entreprise = extraire_nom_entreprise_EMP(objet_parser_html)
             ville = extraire_ville_emploi_EMP(objet_parser_html)
             texte = extraire_texte_emploi_EMP(objet_parser_html)
+            date_pub = extraire_date_publication_emploi_EMP(objet_parser_html)
 
             # Ajout des données au format "clé / colonne / valeur"
             donnees_extraites.append({"cle_unique": cle, "colonne": "nomSociete", "valeur": entreprise})
             donnees_extraites.append({"cle_unique": cle, "colonne": "villeEmploi", "valeur": ville})
             donnees_extraites.append({"cle_unique": cle, "colonne": "libelleEmploi", "valeur": libelle})
             donnees_extraites.append({"cle_unique": cle, "colonne": "Descriptif", "valeur": texte})
+            donnees_extraites.append({"cle_unique": cle, "colonne": "datePublication", "valeur": date_pub})
             #donnees_extraites.append({"cle_unique": cle, "colonne": "localisation", "valeur": localisation})
 
         except FileNotFoundError:
@@ -329,12 +361,12 @@ for cle, group in grouped:
             for i, avis in enumerate(liste_avis):
               # On vérifie qu'on a bien la liste complète (7 éléments)
                 if isinstance(avis, (list, tuple)) and len(avis) > 6:
-                    # On garde que "commentaire"
                     k+=1
                     donnees_extraites.append({"cle_unique": cle, "colonne": f"avis{k}_lib", "valeur": avis[2]})
                     donnees_extraites.append({"cle_unique": cle, "colonne": f"avis{k}_commentaire", "valeur": avis[5]})
                     donnees_extraites.append({"cle_unique": cle, "colonne": f"avis{k}_avantages", "valeur": avis[6]})
                     donnees_extraites.append({"cle_unique": cle, "colonne": f"avis{k}_inconvenients", "valeur": avis[7]})
+                    donnees_extraites.append({"cle_unique": cle, "colonne": f"avis{k}_date", "valeur": avis[8]})
 
         except FileNotFoundError:
             print(f"ERREUR : Fichier introuvable - {nom_fichier}")
