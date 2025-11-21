@@ -22,7 +22,7 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                         0_SOURCE_WEB (Données brutes)                       │
 │                                                                             │
-│  📁 603 fichiers HTML sources                                               │
+│  📁 603 fichiers HTML sources                                              │
 │     ├─ INFO-EMP-LINKEDIN-*.html       (254 fichiers)                       │
 │     ├─ INFO-SOC-GLASSDOOR-*.html      (140 fichiers)                       │
 │     └─ AVIS-SOC-GLASSDOOR-*.html      (209 fichiers)                       │
@@ -52,61 +52,63 @@
                                     │
                                     │ PHASE 2 : Extraction + Parsing HTML
                                     ▼
-┌────────────────────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────────────────-─┐
 │                   2_CURATED_ZONE (Données nettoyées)                        │
+│                                                                             │ 
+│    METADONNEES/                                                             │
+│     └─ metadata_descriptive.csv                                             │
+│        Format : cle_unique | colonne | valeur                               │
 │                                                                             │
-│  📂 METADONNEES/                                                            │
-│     └─ metadata_descriptive.csv                                            │
-│        Format : cle_unique | colonne | valeur                              │
-│                                                                             │
-│  Données extraites (format vertical) :                                     │
+│  Données extraites (format vertical) :                                      │
 │    • LINKEDIN/EMP :                                                         │
-│       - nomSociete, villeEmploi, libelleEmploi, Descriptif                 │
+│       - nomSociete, villeEmploi, libelleEmploi, Descriptif, datePublication │
 │                                                                             │
 │    • GLASSDOOR/SOC :                                                        │
-│       - nomEntreprise, villeEntreprise, tailleEntreprise, description      │
+│       - nomEntreprise, villeEntreprise, tailleEntreprise, description       │
 │                                                                             │
 │    • GLASSDOOR/AVI :                                                        │
-│       - nomEntreprise, noteMoyEntreprise                                   │
-│       - avisN_lib, avisN_commentaire, avisN_avantages, avisN_inconvenients │
+│       - nomEntreprise, noteMoyEntreprise                                    │
+│       - avisN_lib, avisN_commentaire, avisN_avantages, avisN_inconvenients  │
 │                                                                             │
-│  Statut : Données brutes → Données structurées (texte)                     │
-└────────────────────────────────────────────────────────────────────────────┘
+│  Statut : Données brutes → Données structurées (texte)                      │
+└─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     │ PHASE 3 : Transformation ETL
                                     ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│                 3_PRODUCTION_ZONE (Données relationnelles)                  │
-│                                                                             │
-│  📊 Fichiers CSV (format relationnel) :                                    │
-│                                                                             │
-│  📄 societes.csv                                                            │
-│     Colonnes : idsociete | nomsociete | villeSociete | codePostalSociete   │
-│                regionSociete | paysSociete                                 │
-│     Traitement : Dédoublonnage + normalisation (minuscules, sans accents)  │
-│                                                                             │
-│  📄 emplois.csv                                                             │
-│     Colonnes : idemploi | libelleEmploi | villeEmploi | codePostalEmploi   │
-│                regionEmploi | paysEmploi | descriptifemploi | idsociete    │
-│     Traitement : Normalisation des lieux + FK vers societes                │
-│                                                                             │
-│  📄 avis.csv                                                                │
-│     Colonnes : idavis | idsociete | titreAvis | descriptionAvis            │
-│                avantageAvis | inconvenientAvis | noteMoyenneAvis           │
-│     Traitement : 1 ligne par avis + FK vers societes                       │
-│                                                                             │
-│  📄 seed_data.sql                                                           │
-│     Schéma PostgreSQL : CREATE TABLE + procédures stockées                 │
-│                                                                             │
-│  Statut : Prêt pour chargement en base de données OU import dans outil BI  │
-│                                                                             │
-│  📊 DASHBOARD BI (Qlik Sense - Dashboard.pdf)                              │
-│     Charge directement les 3 CSV et effectue les agrégations :            │
-│     • Top 10 sociétés par nombre d'offres                                  │
-│     • Carte géographique (offres par ville + notes moyennes)               │
-│     • Analyse de performance (scatter plot)                                │
-│     • Notes moyennes par société                                           │
-└────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                 3_PRODUCTION_ZONE (Données relationnelles)                       │
+│                                                                                  │
+│  📊 Fichiers CSV (format relationnel) :                                         │
+│                                                                                  │
+│  📄 societes.csv                                                                 │
+│     Colonnes : idsociete | nomsociete | villeSociete | codePostalSociete         │
+│                regionSociete | paysSociete | minEffectif | maxEffectif           │
+│     Traitement : Dédoublonnage + normalisation (minuscules, sans accents)        │
+│                normalisation tailleEntreprise (minEffectif et maxEffectif)       |
+|                                                                                  │
+│  📄 emplois.csv                                                                  │
+│     Colonnes : idemploi | libelleEmploi | villeEmploi | codePostalEmploi         │
+│                regionEmploi | paysEmploi | descriptifemploi | idsociete          |
+|                datePublication                                                   │
+│     Traitement : Normalisation des lieux et dates + FK vers societes             │
+│                                                                                  │
+│  📄 avis.csv                                                                     │
+│     Colonnes : idavis | idsociete | titreAvis | descriptionAvis                  │
+│                avantageAvis | inconvenientAvis | noteMoyenneAvis | dateAvis      │
+│     Traitement : 1 ligne par avis + FK vers societes + normalisation dates       │
+│                                                                                  │
+│  📄 seed_data.sql                                                               │
+│     Schéma PostgreSQL : CREATE TABLE + procédures stockées                       │
+│                                                                                  │
+│  Statut : Prêt pour chargement en base de données OU import dans outil BI        │
+│                                                                                  │
+│  📊 DASHBOARD BI (Qlik Sense - Dashboard.pdf)                                    │
+│     Charge directement les 3 CSV et effectue les agrégations :                    │
+│     • Top 10 sociétés par nombre d'offres                                         │
+│     • Carte géographique (offres par ville + notes moyennes)                      │
+│     • Analyse de performance (scatter plot)                                       │
+│     • Notes moyennes par société                                                  │
+└───────────────────────────────────────────────────────────────────────────────────┘
 
 
 ================================================================================

@@ -97,26 +97,34 @@ python Datalake_Phase3_Transformation_ETL.py
 
 #### 1. societes.csv
 ```
-idsociete | nomsociete | villeSociete | codePostalSociete | regionSociete | paysSociete
+idsociete | nomsociete | villeSociete | codePostalSociete | regionSociete | paysSociete | minEffectif | maxEffectif
 ```
 
 #### 2. emplois.csv
 ```
-idemploi | libelleEmploi | villeEmploi | codePostalEmploi | regionEmploi | paysEmploi | descriptifemploi | idsociete
+idemploi | libelleEmploi | villeEmploi | codePostalEmploi | regionEmploi | paysEmploi | descriptifemploi | idsociete | datePublication
 ```
 
 #### 3. avis.csv
 ```
-idavis | idsociete | titreAvis | descriptionAvis | avantageAvis | inconvenientAvis | noteMoyenneAvis
+idavis | idsociete | titreAvis | descriptionAvis | avantageAvis | inconvenientAvis | noteMoyenneAvis | dateAvis
 ```
 
 ### Dashboard BI
 
-Le dashboard Qlik Sense (`Dashboard.pdf`) charge directement les 3 fichiers CSV de production et effectue les agrégations suivantes :
-- **Top 10 sociétés** par nombre d'offres
+Le dashboard Qlik Sense (`Dashboard - Page *.pdf`) charge directement les 3 fichiers CSV de production et effectue les agrégations suivantes :
 - **Carte géographique** avec répartition des offres par ville
+- **Nombre d'offres** par société
+- **Nombre de publication d'offres** par mois
+- **Parts d'Emplois** par type de contrat
 - **Analyse de performance** (scatter plot : nombre d'avis vs note moyenne)
 - **Notes moyennes** par société
+- **Moyennes effectifs** par société
+- **Note moyenne des avis** 
+- **Top 10 sociétés** par nombre d'offres
+- **Volume des avis** par année
+- **Mots les plus utilisés** das les titres d'avis
+
 
 ## 📁 Structure des fichiers Python
 
