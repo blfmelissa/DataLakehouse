@@ -112,6 +112,9 @@ idavis | idsociete | titreAvis | descriptionAvis | avantageAvis | inconvenientAv
 
 ### Dashboard BI
 
+![Qlik View Dashboard Screenshot](Dashboard/screenshot1.png)
+![Qlik View Dashboard Screenshot](Dashboard/screenshot2.png)
+
 Le dashboard Qlik Sense (`Dashboard - Page *.pdf`) charge directement les 3 fichiers CSV de production et effectue les agrégations suivantes :
 - **Carte géographique** avec répartition des offres par ville
 - **Nombre d'offres** par société
